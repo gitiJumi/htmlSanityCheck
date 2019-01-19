@@ -3,13 +3,13 @@ main:
   - title: "User-Guide"
     url: /userguide
   - title: "Development"
-    url: /development
+    url: /docs/DevelopmentDocs
   - title: "Architecture"
-    url: https://hsc.aim42.org/documentation/hsc_arc42.html
+    url: /docs/hsc_arc42
   - title: "Background"
     url: /background
   - title: "About"
-    url: /about
+    url: /about/
 
 about:
   - title: About

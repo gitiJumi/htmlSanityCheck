@@ -1,0 +1,15 @@
+# docker-compose definition for developing the site.
+#
+version: '2'
+
+services:
+  hhgdac-jekyll:
+    build: .
+    image: htmlsanitycheck-jekyll/0.2
+    command: jekyll build --config _config.yml
+    environment:
+      - JEKYLL_ENV=production
+    ports:
+      - 4000:4000
+    volumes:
+      - .:/srv/jekyll

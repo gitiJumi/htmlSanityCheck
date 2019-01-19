@@ -1,0 +1,5 @@
+= %titleReplaceMe%
+:page-layout: asciidoc
+:page-permalink: /template
+
+%contentReplaceMe%

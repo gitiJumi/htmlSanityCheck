@@ -1,3 +1,5 @@
+import static groovy.io.FileType.FILES
+
 // gradle build script for htmlSanityCheck
 // =======================================
 
@@ -105,6 +107,7 @@ task copyResourceImages(type: Copy) {
     }
     into processResources.destinationDir
 }
+
 processResources {
     exclude '**/*.png'
     inputs.property "version", project.version
@@ -145,6 +148,16 @@ asciidoctor {
 
 } // asciidoctor
 
+task generateSite (
+        type: Exec,
+        group: 'docToolchain',
+        description: 'executes the jekyll container in order to build the static site'
+) {
+    executable = "docker-compose"
+    workingDir "$projectDir/src/docs/website"
+    args = ["--file", "_docker-compose.yml", "up"]
+}
+
 task generateDocs (
         type: Exec,
         group: 'docToolchain',
@@ -158,6 +171,82 @@ task generateDocs (
         executable = "$projectDir/doctoolchain.sh"
     }
     args = ['exportExcel', 'generateHTML', 'htmlSanityCheck']
+}
+
+task _copySite (
+        type: Copy,
+        group: null,
+        description: 'copy _site over to build'
+) {
+    from(new File(projectDir,'src/docs/website/_site')) {
+        include '**/*.*'
+    }
+    into new File(buildDir,'docs/site')
+}
+task _copyDocs (
+        type: Copy,
+        group: null,
+        description: 'copy docs over to site'
+) {
+    from(new File(buildDir,'docs/html5')) {
+        include '**/*.*'
+    }
+    into new File(buildDir,'docs/site/docs')
+}
+
+task mergeDocsWithSite (
+        group: 'docToolchain',
+        description: 'apply site layout to generated docs and copy them over to site',
+        dependsOn: [_copySite, _copyDocs]
+) {
+    doLast() {
+        new File(buildDir,'docs/site/serve').write("""\
+            #!/usr/bin/env python
+            import SimpleHTTPServer
+            import SocketServer
+            
+            class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+                def do_GET(self):
+                    if self.path == '/':
+                        self.path = '/index.html'
+                    if (   self.path.endswith(".png") 
+                        or self.path.endswith(".js")
+                        or self.path.endswith(".jpg")
+                        or self.path.endswith(".html")
+                        or self.path.endswith(".css") ):
+                        pass
+                    else:
+                        if ( self.path.endswith("/") ):
+                            self.path += 'index.html'
+                        else:
+                            self.path += '.html'
+                    return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+            
+            Handler = MyRequestHandler
+            server = SocketServer.TCPServer(('0.0.0.0', 8080), Handler)
+            
+            print "serving your site on http://localhost:8080 "
+            server.serve_forever()
+            """.stripIndent())
+        def template = new File(buildDir,'docs/site/template.html').text
+        new File(buildDir,'docs/site/docs/.').traverse(type: FILES) { file ->
+            if (file.name.endsWith('.html')) {
+                def page = file.text
+                def newFile = template
+                page = page.replace('(?sm)<div id="footer">.*</body>','</body>')
+                def title = (page =~ '(?sm).*<title>([^<]*)</title>.*')[0][1]
+                def content = (page =~ '(?sm).*<body[^>]*>(.*)</body.*')[0][1]
+                newFile = newFile.replace("%titleReplaceMe%",title)
+                newFile = newFile.replace("%contentReplaceMe%",content)
+                file.write(newFile)
+            }
+        }
+    }
+}
+task buildWholeSite (
+        group: 'docToolchain',
+        dependsOn: [generateSite, generateDocs, mergeDocsWithSite]
+) {
 }
 
 // ==========================================================
