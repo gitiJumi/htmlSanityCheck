@@ -95,6 +95,8 @@ class MissingLocalResourcesChecker extends Checker {
     - file:/dir/file.ext
     - file.ext#anchor
 
+    - symlink to any one of these (see #273)
+
     - see #252 (false positives), localResource can be a /example string referencing a file "/example.html"
       This special case is called "prefixOnlyHref"
      */
@@ -118,10 +120,11 @@ class MissingLocalResourcesChecker extends Checker {
         File parentDir = localResourcePath?.startsWith("/") ? baseDir : currentDir;
 
         // we need the baseDir for robust checking of local resources...
+        java.nio.file.
         File localFile = new File( parentDir, localResourcePath );
 
         // action required if resource does not exist
-        if (!localFile.exists() || !localFile.isFile()) {
+        if (!localFile.exists()) {
             handleNonexistingLocalResource( localResource )
         }
     }

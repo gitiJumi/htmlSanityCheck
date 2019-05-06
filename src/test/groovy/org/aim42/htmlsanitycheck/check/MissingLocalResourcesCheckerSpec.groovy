@@ -58,6 +58,42 @@ class MissingLocalResourcesCheckerSpec extends Specification {
     }
 
 
+    def "link to symlinked existing local file is identified as correct"() {
+        given: "link within index.html to symlinked file example.html"
+
+        String linkToLocalFile = """<a href="example.html">aim42</a>"""
+        String HTML = """$HtmlConst.HTML_HEAD $linkToLocalFile $HtmlConst.HTML_END"""
+
+        // 1.) create tmp directory d1
+        File d1 = File.createTempDir()
+
+        // 2.) create index.html
+        File mainFile   = new File(d1, "index.html") << HTML
+
+        // 3.) create local resource file example.html
+        File exampleFile = new File(d1, "linked-to-example.html") << HtmlConst.HTML_HEAD + HtmlConst.HTML_END
+
+
+        // 4.) create symbolic link to the file created in the last step,
+        // named example.html
+       // TODO: create symlink
+
+        // 5.) configure checker with temp directory
+        myConfig.addConfigurationItem( Configuration.ITEM_NAME_sourceDir, d1)
+        missingLocalResourcesChecker = new MissingLocalResourcesChecker(myConfig)
+
+        // 6.) perform checks
+        htmlPage = new HtmlPage( mainFile )
+        when: "checks are performed"
+        collector = missingLocalResourcesChecker.performCheck(htmlPage)
+
+        then:
+        collector.nrOfProblems() == 0
+
+
+    }
+
+
     def "empty page has no errors"() {
         given: "an empty HTML page"
         String HTML = """$HtmlConst.HTML_HEAD $HtmlConst.HTML_END """
