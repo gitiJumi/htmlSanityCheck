@@ -3,7 +3,7 @@ language: groovy
 sudo: false
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 # Handle git submodules yourself
 git:
